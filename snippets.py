@@ -22,3 +22,10 @@ def get(name):
   """
   logging.error("FIXME: Unimplemented - get({!r})").format(name)
   return snippet or False
+
+def list():
+  """
+  Return a list of snippet names
+  """
+  logging.error("FIXME: Unimplemented - list()")
+  pass # return names as list for display/printing?
