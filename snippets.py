@@ -45,19 +45,13 @@ def main():
   put_parser.add_argument("name", type=str, help="Short name for snippet (no spaces)")
   put_parser.add_argument("snippet", type=str,
                           help="Snippet to store -- use double quotes to enclose spaces")
- 
-  #parser.add_argument("mode", type=str, help="Choose one from:  get, put, list",
-  #                   choices=["get", "put", "list"])
-  #parser.add_argument("name", type=str, help="Short name for snippet (no spaces)")
-  #parser.add_argument("snippet", type=str,
-  #                    help="Snippet to store -- use double quotes to enclose spaces")
+  
+  # Subparser for "get" command
+  logging.debug("Constructing <get> subparser...")
+  get_parser = subparsers.add_parser("get", help="Retrieve a snippet.")
+  get_parser.add_argument("name", type=str, help="Short name for snippet (no spaces)")
+  
   arguments = parser.parse_args(sys.argv[1:])
-  #print type(arguments) ### DEBUG
-  #print "mode: {}".format(arguments.mode) ### DEBUG
-  print "name: {}".format(arguments.name) ### DEBUG
-  print "snippet: {}".format(arguments.snippet) ### DEBUG
-  # FIXME:  mode get only requires name, but script will currently throw an error if
-  # a snippet is not specified.  Mode list will have the same problem.
 
 if __name__ == "__main__":
   main()
