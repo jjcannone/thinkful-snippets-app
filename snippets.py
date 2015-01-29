@@ -22,15 +22,14 @@ def put(name, snippet):
   return name, snippet
 
 def get(name):
-  """
-  Retrieve the snippet with a given name.
-  
-  #If there is no such snippet... return false.
-  
-  Returns the snippet.
-  """
-  logging.error("FIXME: Unimplemented - get({!r})".format(name))
-  return "dummy value for testing"
+  """Retrieve the snippet with a given name."""
+  logging.info("Retrieving snippet {!r}".format(name))
+  cursor = connection.cursor()
+  command = "SELECT message FROM snippets WHERE keyword=%s"
+  cursor.execute(command, (name,)) ### THAT'S going to take some getting used to...
+  connection.commit()
+  row = cursor.fetchone() # pull one row of results from db (only expect one row)
+  return row[0]
 
 def list():
   """
@@ -49,14 +48,16 @@ def main():
   # Subparser for "put" command
   logging.debug("Constructing <put> subparser...")
   put_parser = subparsers.add_parser("put", help="Store a snippet.")
-  put_parser.add_argument("name", type=str, help="Short name for snippet (no spaces)")
+  put_parser.add_argument("name", type=str,
+                          help="Short name for snippet -- use double quotes to enclose spaces")
   put_parser.add_argument("snippet", type=str,
                           help="Snippet to store -- use double quotes to enclose spaces")
   
   # Subparser for "get" command
   logging.debug("Constructing <get> subparser...")
   get_parser = subparsers.add_parser("get", help="Retrieve a snippet.")
-  get_parser.add_argument("name", type=str, help="Short name for snippet (no spaces)")
+  get_parser.add_argument("name", type=str, 
+                          help="Short name for snippet -- use double quotes to enclose spaces")
   
   arguments = parser.parse_args(sys.argv[1:])
   # Convert parsed arguments from namespace to dictionary
