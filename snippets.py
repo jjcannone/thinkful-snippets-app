@@ -11,19 +11,19 @@ def put(name, snippet):
   
   Returns the name and the snippet.
   """
-  logging.error("FIXME: Unimplemented - put({!r}, {!r})").format(name, snippet)
+  logging.error("FIXME: Unimplemented - put({!r}, {!r})".format(name, snippet))
   return name, snippet
 
 def get(name):
   """
   Retrieve the snippet with a given name.
   
-  If there is no such snippet... return false.
+  #If there is no such snippet... return false.
   
   Returns the snippet.
   """
-  logging.error("FIXME: Unimplemented - get({!r})").format(name)
-  return snippet or False
+  logging.error("FIXME: Unimplemented - get({!r})".format(name))
+  return "dummy value for testing"
 
 def list():
   """
@@ -52,6 +52,16 @@ def main():
   get_parser.add_argument("name", type=str, help="Short name for snippet (no spaces)")
   
   arguments = parser.parse_args(sys.argv[1:])
+  # Convert parsed arguments from namespace to dictionary
+  arguments = vars(arguments)
+  command = arguments.pop("command")
+  
+  if command == "put":
+    name, snippet = put(**arguments)
+    print("Stored {!r} as {!r}".format(snippet, name))
+  elif command == "get":
+    snippet = get(**arguments)
+    print("Retrieved snippet: {!r}".format(snippet))
 
 if __name__ == "__main__":
   main()
