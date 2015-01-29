@@ -35,12 +35,29 @@ def list():
 def main():
   """Main function"""
   logging.info("Constructing parser...")
-  parser = argparse.ArgumentParser(description="Store and retrieve snippets of text")
-  parser.add_argument("mode", help="Choose one from:  get, put, list")
-  parser.add_argument("name", help="Short name for snippet (no spaces)")
-  parser.add_argument("snippet", help="Snippet to store -- use double quotes to enclose spaces")
+  parser = argparse.ArgumentParser(description="Store and retrieve snippets of text.")
+  
+  subparsers = parser.add_subparsers(dest="command", help="Available commands")
+  
+  # Subparser for "put" command
+  logging.debug("Constructing <put> subparser...")
+  put_parser = subparsers.add_parser("put", help="Store a snippet.")
+  put_parser.add_argument("name", type=str, help="Short name for snippet (no spaces)")
+  put_parser.add_argument("snippet", type=str,
+                          help="Snippet to store -- use double quotes to enclose spaces")
+ 
+  #parser.add_argument("mode", type=str, help="Choose one from:  get, put, list",
+  #                   choices=["get", "put", "list"])
+  #parser.add_argument("name", type=str, help="Short name for snippet (no spaces)")
+  #parser.add_argument("snippet", type=str,
+  #                    help="Snippet to store -- use double quotes to enclose spaces")
   arguments = parser.parse_args(sys.argv[1:])
-  #print arguments.mode
+  #print type(arguments) ### DEBUG
+  #print "mode: {}".format(arguments.mode) ### DEBUG
+  print "name: {}".format(arguments.name) ### DEBUG
+  print "snippet: {}".format(arguments.snippet) ### DEBUG
+  # FIXME:  mode get only requires name, but script will currently throw an error if
+  # a snippet is not specified.  Mode list will have the same problem.
 
 if __name__ == "__main__":
   main()
