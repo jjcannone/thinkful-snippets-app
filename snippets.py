@@ -14,29 +14,43 @@ logging.debug("Database connection established.")
 def put(name, snippet):
   """Store a snippet with an associated name. Returns the name and the snippet."""
   logging.info("Storing snippet {!r}: {!r}".format(name, snippet))
-  cursor = connection.cursor()
-  command = "insert into snippets values (%s, %s)"
-  cursor.execute(command, (name, snippet))
-  connection.commit()
-  logging.debug("Snippet stored successfully.")
+  with connection, connection.cursor() as cursor:
+    try:
+      cursor.execute("INSERT INTO snippets VALUES (%s, %s)", (name, snippet))
+      logging.debug("Snippet stored successfully.")
+      print("Stored snippet {!r} under name {!r}".format(snippet, name))
+    except psycopg2.IntegrityError as e:
+      connection.rollback()
+      cursor.execute("UPDATE snippets SET message=%s WHERE keyword=%s", (snippet, name))
+      logging.debug("Snippet updated successfully.")
+      print("Updated name {!r} as snippet {!r}".format(name, snippet))
   return name, snippet
 
 def get(name):
   """Retrieve the snippet with a given name."""
   logging.info("Retrieving snippet {!r}".format(name))
-  cursor = connection.cursor()
-  command = "SELECT message FROM snippets WHERE keyword=%s"
-  cursor.execute(command, (name,)) ### THAT'S going to take some getting used to...
-  connection.commit()
-  row = cursor.fetchone() # pull one row of results from db (only expect one row)
-  return row[0]
+#  cursor = connection.cursor()
+#  cursor.execute(command, (name,)) ### THAT'S going to take some getting used to...
+#  row = cursor.fetchone() # pull one row of results from db (only expect one row due to PK)
+#  connection.commit()
+  with connection, connection.cursor() as cursor:
+    cursor.execute("SELECT message FROM snippets WHERE keyword=%s", (name,))
+    row = cursor.fetchone()
+
+  if row:
+    print("Retrieved snippet: {!r}".format(name))
+    return row[0]
+  else:
+    logging.debug("Requested snippet name ({!r}) was not found in the database.".format(name))
 
 def list():
-  """
-  Return a list of snippet names
-  """
-  logging.error("FIXME: Unimplemented - list()")
-  pass # return names as list for display/printing?
+  """Return a list of snippet names"""
+  logging.info("List snippets from database")
+  print("Name: Snippet")
+  with connection, connection.cursor() as cursor:
+    cursor.execute("SELECT keyword, message FROM snippets ORDER BY keyword")
+    for row in cursor.fetchall():
+      print ("{!r}: {!r}".format(row[0],row[1]))
 
 def main():
   """Main function"""
@@ -59,6 +73,10 @@ def main():
   get_parser.add_argument("name", type=str, 
                           help="Short name for snippet -- use double quotes to enclose spaces")
   
+  # Subparser for "list" command
+  logging.debug("Constructing <list> subparser...")
+  list_parser = subparsers.add_parser("list", help="List all snippets (in alphabetical order).")
+  
   arguments = parser.parse_args(sys.argv[1:])
   # Convert parsed arguments from namespace to dictionary
   arguments = vars(arguments)
@@ -66,10 +84,10 @@ def main():
   
   if command == "put":
     name, snippet = put(**arguments)
-    print("Stored {!r} as {!r}".format(snippet, name))
   elif command == "get":
     snippet = get(**arguments)
-    print("Retrieved snippet: {!r}".format(snippet))
-
+  elif command == "list":
+    list()
+    
 if __name__ == "__main__":
   main()
