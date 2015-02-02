@@ -11,17 +11,19 @@ logging.debug("Connecting to PostgreSQL...")
 connection = psycopg2.connect("dbname='snippets' user='action' host='localhost'")
 logging.debug("Database connection established.")
 
-def put(name, snippet):
+def put(name, snippet, hide, show):
   """Store a snippet with an associated name. Returns the name and the snippet."""
   logging.info("Storing snippet {!r}: {!r}".format(name, snippet))
+  truth = "true" if hide else "false"
   with connection, connection.cursor() as cursor:
     try:
-      cursor.execute("INSERT INTO snippets VALUES (%s, %s)", (name, snippet))
+      cursor.execute("INSERT INTO snippets VALUES (%s, %s, %s)", (name, snippet, truth))
       logging.debug("Snippet stored successfully.")
       print("Stored snippet {!r} under name {!r}".format(snippet, name))
     except psycopg2.IntegrityError as e:
       connection.rollback()
-      cursor.execute("UPDATE snippets SET message=%s WHERE keyword=%s", (snippet, name))
+      cursor.execute("UPDATE snippets SET message=%s, hidden=%s WHERE keyword=%s", 
+                     (snippet, truth, name))
       logging.debug("Snippet updated successfully.")
       print("Updated name {!r} as snippet {!r}".format(name, snippet))
   return name, snippet
@@ -34,7 +36,7 @@ def get(name):
 #  row = cursor.fetchone() # pull one row of results from db (only expect one row due to PK)
 #  connection.commit()
   with connection, connection.cursor() as cursor:
-    cursor.execute("SELECT message FROM snippets WHERE keyword=%s", (name,))
+    cursor.execute("SELECT message FROM snippets WHERE keyword=%s AND hidden=f", (name,))
     row = cursor.fetchone()
 
   if row:
@@ -48,10 +50,20 @@ def list():
   logging.info("List snippets from database")
   print("Name: Snippet")
   with connection, connection.cursor() as cursor:
-    cursor.execute("SELECT keyword, message FROM snippets ORDER BY keyword")
+    cursor.execute("SELECT keyword, message FROM snippets WHERE hidden='f' ORDER BY keyword")
     for row in cursor.fetchall():
       print ("{!r}: {!r}".format(row[0],row[1]))
 
+def search(search_string):
+  """Return a list of snippet names that match the input string"""
+  logging.info("Search for input string in snippets")
+  print("Name: Snippet")
+  with connection, connection.cursor() as cursor:
+    cursor.execute("SELECT keyword, message FROM snippets WHERE message LIKE %s AND hidden='f' ORDER BY keyword",
+                  ("%"+search_string+"%",))
+    for row in cursor.fetchall():
+      print ("{!r}: {!r}".format(row[0],row[1]))
+      
 def main():
   """Main function"""
   logging.info("Constructing parser...")
@@ -66,6 +78,8 @@ def main():
                           help="Short name for snippet -- use double quotes to enclose spaces")
   put_parser.add_argument("snippet", type=str,
                           help="Snippet to store -- use double quotes to enclose spaces")
+  put_parser.add_argument("-d", "--hide", action="store_true", help="Hide snippet from view.")
+  put_parser.add_argument("-s", "--show", action="store_true", help="Allow snippet to be viewed.")
   
   # Subparser for "get" command
   logging.debug("Constructing <get> subparser...")
@@ -76,6 +90,12 @@ def main():
   # Subparser for "list" command
   logging.debug("Constructing <list> subparser...")
   list_parser = subparsers.add_parser("list", help="List all snippets (in alphabetical order).")
+  
+  # Subparser for "search" command
+  logging.debug("Constructuing <search> subparser...")
+  search_parser = subparsers.add_parser("search", help="Search all snippets for input string.")
+  search_parser.add_argument("search_string", type=str, 
+                             help="String to find -- use double quotes to enclose spaces.")
   
   arguments = parser.parse_args(sys.argv[1:])
   # Convert parsed arguments from namespace to dictionary
@@ -88,6 +108,8 @@ def main():
     snippet = get(**arguments)
   elif command == "list":
     list()
+  elif command == "search":
+    search(**arguments)
     
 if __name__ == "__main__":
   main()
